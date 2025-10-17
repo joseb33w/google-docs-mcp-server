@@ -1,0 +1,24 @@
+{
+  "name": "google-docs-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Google Docs",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "web": "node openai-mcp-server.js",
+    "deploy": "npm run build && npm run web"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "googleapis": "^144.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
