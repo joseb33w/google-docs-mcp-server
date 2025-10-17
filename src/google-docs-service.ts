@@ -37,8 +37,7 @@ export class GoogleDocsService {
           credentials: serviceAccountKey,
           scopes: [
             'https://www.googleapis.com/auth/documents',
-            'https://www.googleapis.com/auth/drive.file',
-            'https://www.googleapis.com/auth/drive.metadata.readonly',
+            'https://www.googleapis.com/auth/drive',
           ],
         });
       } catch (error) {
