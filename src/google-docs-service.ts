@@ -29,8 +29,20 @@ export class GoogleDocsService {
     this.google = (await import('googleapis')).google;
     this.initialized = true;
 
-    // Check for service account key first (for Railway deployment)
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    // Check for OAuth tokens first (for Railway deployment)
+    if (process.env.GOOGLE_OAUTH_TOKENS) {
+      try {
+        const tokens = JSON.parse(process.env.GOOGLE_OAUTH_TOKENS);
+        this.oauth2Client = new this.google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          'http://localhost'
+        );
+        this.oauth2Client.setCredentials(tokens);
+      } catch (error) {
+        throw new Error('Invalid GOOGLE_OAUTH_TOKENS format');
+      }
+    } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       try {
         const serviceAccountKey = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
         this.oauth2Client = new this.google.auth.GoogleAuth({
@@ -92,8 +104,8 @@ export class GoogleDocsService {
   async ensureAuthenticated() {
     await this.initializeAuth();
     
-    // For service account, authentication is automatic
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    // For OAuth tokens or service account, authentication is automatic
+    if (process.env.GOOGLE_OAUTH_TOKENS || process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       return;
     }
     
