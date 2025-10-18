@@ -160,7 +160,385 @@ const tools: Tool[] = [
           type: 'string',
           description: 'Filter by MIME type (optional)',
         },
+        query: {
+          type: 'string',
+          description: 'Custom search query (optional)',
+        },
+        orderBy: {
+          type: 'string',
+          description: 'Order results by field (default: modifiedTime desc)',
+          default: 'modifiedTime desc',
+        },
       },
+    },
+  },
+  {
+    name: 'drive_get_file',
+    description: 'Get file metadata and content',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        fields: {
+          type: 'string',
+          description: 'Fields to return (optional)',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_create_file',
+    description: 'Create a new file in Google Drive',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'File name',
+        },
+        mimeType: {
+          type: 'string',
+          description: 'MIME type of the file',
+        },
+        content: {
+          type: 'string',
+          description: 'File content (optional)',
+        },
+        parents: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Parent folder IDs (optional)',
+        },
+      },
+      required: ['name', 'mimeType'],
+    },
+  },
+  {
+    name: 'drive_update_file',
+    description: 'Update file content or metadata',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        name: {
+          type: 'string',
+          description: 'New file name (optional)',
+        },
+        content: {
+          type: 'string',
+          description: 'New file content (optional)',
+        },
+        addParents: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Add to these folders (optional)',
+        },
+        removeParents: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Remove from these folders (optional)',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_delete_file',
+    description: 'Delete a file from Google Drive',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_copy_file',
+    description: 'Copy a file in Google Drive',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Source file ID',
+        },
+        name: {
+          type: 'string',
+          description: 'Name for the copied file (optional)',
+        },
+        parents: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Destination folder IDs (optional)',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_move_file',
+    description: 'Move a file to different folders',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'File ID to move',
+        },
+        addParents: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Add to these folders',
+        },
+        removeParents: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Remove from these folders',
+        },
+      },
+      required: ['fileId', 'addParents', 'removeParents'],
+    },
+  },
+  {
+    name: 'drive_list_permissions',
+    description: 'List file permissions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_create_permission',
+    description: 'Share a file with users',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        emailAddress: {
+          type: 'string',
+          description: 'Email address to share with',
+        },
+        role: {
+          type: 'string',
+          enum: ['reader', 'writer', 'commenter', 'owner'],
+          description: 'Permission role',
+        },
+        type: {
+          type: 'string',
+          enum: ['user', 'group', 'domain', 'anyone'],
+          description: 'Permission type',
+        },
+      },
+      required: ['fileId', 'role', 'type'],
+    },
+  },
+  {
+    name: 'drive_delete_permission',
+    description: 'Remove file permissions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        permissionId: {
+          type: 'string',
+          description: 'Permission ID to remove',
+        },
+      },
+      required: ['fileId', 'permissionId'],
+    },
+  },
+  {
+    name: 'drive_list_revisions',
+    description: 'List file revisions/versions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_get_revision',
+    description: 'Get specific file revision',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        revisionId: {
+          type: 'string',
+          description: 'Revision ID',
+        },
+      },
+      required: ['fileId', 'revisionId'],
+    },
+  },
+  {
+    name: 'drive_delete_revision',
+    description: 'Delete a file revision',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        revisionId: {
+          type: 'string',
+          description: 'Revision ID to delete',
+        },
+      },
+      required: ['fileId', 'revisionId'],
+    },
+  },
+  {
+    name: 'drive_list_comments',
+    description: 'List file comments',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        maxResults: {
+          type: 'number',
+          description: 'Maximum number of comments (default: 100)',
+          default: 100,
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
+    name: 'drive_create_comment',
+    description: 'Add a comment to a file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        content: {
+          type: 'string',
+          description: 'Comment content',
+        },
+        quotedFileContent: {
+          type: 'string',
+          description: 'Quoted text from the file (optional)',
+        },
+      },
+      required: ['fileId', 'content'],
+    },
+  },
+  {
+    name: 'drive_delete_comment',
+    description: 'Delete a file comment',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        commentId: {
+          type: 'string',
+          description: 'Comment ID to delete',
+        },
+      },
+      required: ['fileId', 'commentId'],
+    },
+  },
+  {
+    name: 'drive_list_replies',
+    description: 'List replies to a comment',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        commentId: {
+          type: 'string',
+          description: 'Comment ID',
+        },
+      },
+      required: ['fileId', 'commentId'],
+    },
+  },
+  {
+    name: 'drive_create_reply',
+    description: 'Reply to a comment',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        commentId: {
+          type: 'string',
+          description: 'Comment ID to reply to',
+        },
+        content: {
+          type: 'string',
+          description: 'Reply content',
+        },
+      },
+      required: ['fileId', 'commentId', 'content'],
+    },
+  },
+  {
+    name: 'drive_delete_reply',
+    description: 'Delete a reply to a comment',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        commentId: {
+          type: 'string',
+          description: 'Comment ID',
+        },
+        replyId: {
+          type: 'string',
+          description: 'Reply ID to delete',
+        },
+      },
+      required: ['fileId', 'commentId', 'replyId'],
     },
   },
 ];
@@ -279,7 +657,288 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'drive_list_files': {
         const result = await getGoogleDocsService().listDriveFiles(
           args?.maxResults as number,
-          args?.mimeType as string
+          args?.mimeType as string,
+          args?.query as string,
+          args?.orderBy as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_get_file': {
+        const result = await getGoogleDocsService().getDriveFile(
+          args?.fileId as string,
+          args?.fields as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_create_file': {
+        const result = await getGoogleDocsService().createDriveFile(
+          args?.name as string,
+          args?.mimeType as string,
+          args?.content as string,
+          args?.parents as string[]
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_update_file': {
+        const result = await getGoogleDocsService().updateDriveFile(
+          args?.fileId as string,
+          args?.name as string,
+          args?.content as string,
+          args?.addParents as string[],
+          args?.removeParents as string[]
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_delete_file': {
+        const result = await getGoogleDocsService().deleteDriveFile(
+          args?.fileId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_copy_file': {
+        const result = await getGoogleDocsService().copyDriveFile(
+          args?.fileId as string,
+          args?.name as string,
+          args?.parents as string[]
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_move_file': {
+        const result = await getGoogleDocsService().moveDriveFile(
+          args?.fileId as string,
+          args?.addParents as string[],
+          args?.removeParents as string[]
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_list_permissions': {
+        const result = await getGoogleDocsService().listDrivePermissions(
+          args?.fileId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_create_permission': {
+        const result = await getGoogleDocsService().createDrivePermission(
+          args?.fileId as string,
+          args?.emailAddress as string,
+          args?.role as string,
+          args?.type as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_delete_permission': {
+        const result = await getGoogleDocsService().deleteDrivePermission(
+          args?.fileId as string,
+          args?.permissionId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_list_revisions': {
+        const result = await getGoogleDocsService().listDriveRevisions(
+          args?.fileId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_get_revision': {
+        const result = await getGoogleDocsService().getDriveRevision(
+          args?.fileId as string,
+          args?.revisionId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_delete_revision': {
+        const result = await getGoogleDocsService().deleteDriveRevision(
+          args?.fileId as string,
+          args?.revisionId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_list_comments': {
+        const result = await getGoogleDocsService().listDriveComments(
+          args?.fileId as string,
+          args?.maxResults as number
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_create_comment': {
+        const result = await getGoogleDocsService().createDriveComment(
+          args?.fileId as string,
+          args?.content as string,
+          args?.quotedFileContent as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_delete_comment': {
+        const result = await getGoogleDocsService().deleteDriveComment(
+          args?.fileId as string,
+          args?.commentId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_list_replies': {
+        const result = await getGoogleDocsService().listDriveReplies(
+          args?.fileId as string,
+          args?.commentId as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_create_reply': {
+        const result = await getGoogleDocsService().createDriveReply(
+          args?.fileId as string,
+          args?.commentId as string,
+          args?.content as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_delete_reply': {
+        const result = await getGoogleDocsService().deleteDriveReply(
+          args?.fileId as string,
+          args?.commentId as string,
+          args?.replyId as string
         );
         return {
           content: [

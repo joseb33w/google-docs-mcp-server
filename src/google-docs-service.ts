@@ -239,20 +239,23 @@ export class GoogleDocsService {
     };
   }
 
-  async listDriveFiles(maxResults = 50, mimeType?: string) {
+  async listDriveFiles(maxResults = 50, mimeType?: string, query?: string, orderBy = 'modifiedTime desc') {
     await this.ensureAuthenticated();
 
-    let query = "trashed=false";
+    let searchQuery = "trashed=false";
     if (mimeType) {
-      query += ` and mimeType='${mimeType}'`;
+      searchQuery += ` and mimeType='${mimeType}'`;
+    }
+    if (query) {
+      searchQuery += ` and name contains '${query}'`;
     }
 
     const response = await this.drive.files.list({
-      q: query,
+      q: searchQuery,
       spaces: 'drive',
-      fields: 'files(id, name, mimeType, createdTime, modifiedTime, size, webViewLink)',
+      fields: 'files(id, name, mimeType, createdTime, modifiedTime, size, webViewLink, parents)',
       pageSize: maxResults,
-      orderBy: 'modifiedTime desc',
+      orderBy: orderBy,
     });
 
     return {
@@ -265,11 +268,176 @@ export class GoogleDocsService {
         modifiedTime: file.modifiedTime,
         size: file.size,
         webViewLink: file.webViewLink,
+        parents: file.parents,
         isGoogleDoc: file.mimeType === 'application/vnd.google-apps.document',
         isGoogleSheet: file.mimeType === 'application/vnd.google-apps.spreadsheet',
         isGoogleSlide: file.mimeType === 'application/vnd.google-apps.presentation',
         isFolder: file.mimeType === 'application/vnd.google-apps.folder',
       })),
+    };
+  }
+
+  async getDriveFile(fileId: string, fields?: string) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.files.get({
+      fileId: fileId,
+      fields: fields || 'id,name,mimeType,createdTime,modifiedTime,size,webViewLink,parents,permissions,owners',
+    });
+
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      mimeType: response.data.mimeType,
+      createdTime: response.data.createdTime,
+      modifiedTime: response.data.modifiedTime,
+      size: response.data.size,
+      webViewLink: response.data.webViewLink,
+      parents: response.data.parents,
+      permissions: response.data.permissions,
+      owners: response.data.owners,
+    };
+  }
+
+  async createDriveFile(name: string, mimeType: string, content?: string, parents?: string[]) {
+    await this.ensureAuthenticated();
+
+    const fileMetadata = {
+      name: name,
+      parents: parents,
+    };
+
+    let response;
+    if (content) {
+      // Create file with content
+      const media = {
+        mimeType: mimeType,
+        body: content,
+      };
+      response = await this.drive.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: 'id,name,mimeType,webViewLink',
+      });
+    } else {
+      // Create empty file
+      response = await this.drive.files.create({
+        resource: {
+          ...fileMetadata,
+          mimeType: mimeType,
+        },
+        fields: 'id,name,mimeType,webViewLink',
+      });
+    }
+
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      mimeType: response.data.mimeType,
+      webViewLink: response.data.webViewLink,
+      message: 'File created successfully',
+    };
+  }
+
+  async updateDriveFile(fileId: string, name?: string, content?: string, addParents?: string[], removeParents?: string[]) {
+    await this.ensureAuthenticated();
+
+    const updateData: any = {};
+    
+    if (name) {
+      updateData.name = name;
+    }
+
+    if (addParents || removeParents) {
+      updateData.addParents = addParents?.join(',');
+      updateData.removeParents = removeParents?.join(',');
+    }
+
+    let response;
+    if (content) {
+      // Update file content
+      const media = {
+        mimeType: 'text/plain',
+        body: content,
+      };
+      response = await this.drive.files.update({
+        fileId: fileId,
+        resource: updateData,
+        media: media,
+        fields: 'id,name,mimeType,webViewLink',
+      });
+    } else {
+      // Update metadata only
+      response = await this.drive.files.update({
+        fileId: fileId,
+        resource: updateData,
+        fields: 'id,name,mimeType,webViewLink',
+      });
+    }
+
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      mimeType: response.data.mimeType,
+      webViewLink: response.data.webViewLink,
+      message: 'File updated successfully',
+    };
+  }
+
+  async deleteDriveFile(fileId: string) {
+    await this.ensureAuthenticated();
+
+    await this.drive.files.delete({
+      fileId: fileId,
+    });
+
+    return {
+      fileId,
+      message: 'File deleted successfully',
+    };
+  }
+
+  async copyDriveFile(fileId: string, name?: string, parents?: string[]) {
+    await this.ensureAuthenticated();
+
+    const copyMetadata: any = {};
+    if (name) {
+      copyMetadata.name = name;
+    }
+    if (parents) {
+      copyMetadata.parents = parents;
+    }
+
+    const response = await this.drive.files.copy({
+      fileId: fileId,
+      resource: copyMetadata,
+      fields: 'id,name,mimeType,webViewLink',
+    });
+
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      mimeType: response.data.mimeType,
+      webViewLink: response.data.webViewLink,
+      message: 'File copied successfully',
+    };
+  }
+
+  async moveDriveFile(fileId: string, addParents: string[], removeParents: string[]) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.files.update({
+      fileId: fileId,
+      addParents: addParents.join(','),
+      removeParents: removeParents.join(','),
+      fields: 'id,name,parents',
+    });
+
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      parents: response.data.parents,
+      message: 'File moved successfully',
     };
   }
 
@@ -314,5 +482,244 @@ export class GoogleDocsService {
         })
         .pipe(dest);
     });
+  }
+
+  // Google Drive Permissions
+  async listDrivePermissions(fileId: string) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.permissions.list({
+      fileId: fileId,
+      fields: 'permissions(id,type,role,emailAddress,displayName)',
+    });
+
+    return {
+      permissions: response.data.permissions?.map((permission: any) => ({
+        id: permission.id,
+        type: permission.type,
+        role: permission.role,
+        emailAddress: permission.emailAddress,
+        displayName: permission.displayName,
+      })) || [],
+    };
+  }
+
+  async createDrivePermission(fileId: string, emailAddress: string, role: string, type: string) {
+    await this.ensureAuthenticated();
+
+    const permission: any = {
+      type: type,
+      role: role,
+    };
+
+    if (emailAddress && type === 'user') {
+      permission.emailAddress = emailAddress;
+    }
+
+    const response = await this.drive.permissions.create({
+      fileId: fileId,
+      resource: permission,
+      fields: 'id,type,role,emailAddress',
+    });
+
+    return {
+      id: response.data.id,
+      type: response.data.type,
+      role: response.data.role,
+      emailAddress: response.data.emailAddress,
+      message: 'Permission created successfully',
+    };
+  }
+
+  async deleteDrivePermission(fileId: string, permissionId: string) {
+    await this.ensureAuthenticated();
+
+    await this.drive.permissions.delete({
+      fileId: fileId,
+      permissionId: permissionId,
+    });
+
+    return {
+      fileId,
+      permissionId,
+      message: 'Permission deleted successfully',
+    };
+  }
+
+  // Google Drive Revisions
+  async listDriveRevisions(fileId: string) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.revisions.list({
+      fileId: fileId,
+      fields: 'revisions(id,modifiedTime,size,keepForever,published,exportLinks)',
+    });
+
+    return {
+      revisions: response.data.revisions?.map((revision: any) => ({
+        id: revision.id,
+        modifiedTime: revision.modifiedTime,
+        size: revision.size,
+        keepForever: revision.keepForever,
+        published: revision.published,
+        exportLinks: revision.exportLinks,
+      })) || [],
+    };
+  }
+
+  async getDriveRevision(fileId: string, revisionId: string) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.revisions.get({
+      fileId: fileId,
+      revisionId: revisionId,
+      fields: 'id,modifiedTime,size,keepForever,published,exportLinks',
+    });
+
+    return {
+      id: response.data.id,
+      modifiedTime: response.data.modifiedTime,
+      size: response.data.size,
+      keepForever: response.data.keepForever,
+      published: response.data.published,
+      exportLinks: response.data.exportLinks,
+    };
+  }
+
+  async deleteDriveRevision(fileId: string, revisionId: string) {
+    await this.ensureAuthenticated();
+
+    await this.drive.revisions.delete({
+      fileId: fileId,
+      revisionId: revisionId,
+    });
+
+    return {
+      fileId,
+      revisionId,
+      message: 'Revision deleted successfully',
+    };
+  }
+
+  // Google Drive Comments
+  async listDriveComments(fileId: string, maxResults = 100) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.comments.list({
+      fileId: fileId,
+      maxResults: maxResults,
+      fields: 'comments(id,content,createdTime,modifiedTime,author,quotedFileContent)',
+    });
+
+    return {
+      comments: response.data.comments?.map((comment: any) => ({
+        id: comment.id,
+        content: comment.content,
+        createdTime: comment.createdTime,
+        modifiedTime: comment.modifiedTime,
+        author: comment.author,
+        quotedFileContent: comment.quotedFileContent,
+      })) || [],
+    };
+  }
+
+  async createDriveComment(fileId: string, content: string, quotedFileContent?: string) {
+    await this.ensureAuthenticated();
+
+    const comment: any = {
+      content: content,
+    };
+
+    if (quotedFileContent) {
+      comment.quotedFileContent = quotedFileContent;
+    }
+
+    const response = await this.drive.comments.create({
+      fileId: fileId,
+      resource: comment,
+      fields: 'id,content,createdTime,author',
+    });
+
+    return {
+      id: response.data.id,
+      content: response.data.content,
+      createdTime: response.data.createdTime,
+      author: response.data.author,
+      message: 'Comment created successfully',
+    };
+  }
+
+  async deleteDriveComment(fileId: string, commentId: string) {
+    await this.ensureAuthenticated();
+
+    await this.drive.comments.delete({
+      fileId: fileId,
+      commentId: commentId,
+    });
+
+    return {
+      fileId,
+      commentId,
+      message: 'Comment deleted successfully',
+    };
+  }
+
+  // Google Drive Replies
+  async listDriveReplies(fileId: string, commentId: string) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.replies.list({
+      fileId: fileId,
+      commentId: commentId,
+      fields: 'replies(id,content,createdTime,modifiedTime,author)',
+    });
+
+    return {
+      replies: response.data.replies?.map((reply: any) => ({
+        id: reply.id,
+        content: reply.content,
+        createdTime: reply.createdTime,
+        modifiedTime: reply.modifiedTime,
+        author: reply.author,
+      })) || [],
+    };
+  }
+
+  async createDriveReply(fileId: string, commentId: string, content: string) {
+    await this.ensureAuthenticated();
+
+    const response = await this.drive.replies.create({
+      fileId: fileId,
+      commentId: commentId,
+      resource: {
+        content: content,
+      },
+      fields: 'id,content,createdTime,author',
+    });
+
+    return {
+      id: response.data.id,
+      content: response.data.content,
+      createdTime: response.data.createdTime,
+      author: response.data.author,
+      message: 'Reply created successfully',
+    };
+  }
+
+  async deleteDriveReply(fileId: string, commentId: string, replyId: string) {
+    await this.ensureAuthenticated();
+
+    await this.drive.replies.delete({
+      fileId: fileId,
+      commentId: commentId,
+      replyId: replyId,
+    });
+
+    return {
+      fileId,
+      commentId,
+      replyId,
+      message: 'Reply deleted successfully',
+    };
   }
 }
