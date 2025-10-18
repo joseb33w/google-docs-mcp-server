@@ -145,6 +145,24 @@ const tools: Tool[] = [
       required: ['documentId', 'outputPath'],
     },
   },
+  {
+    name: 'drive_list_files',
+    description: 'List all files in Google Drive',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        maxResults: {
+          type: 'number',
+          description: 'Maximum number of files to return (default: 50)',
+          default: 50,
+        },
+        mimeType: {
+          type: 'string',
+          description: 'Filter by MIME type (optional)',
+        },
+      },
+    },
+  },
 ];
 
 const toolsResponse = { tools };
@@ -247,6 +265,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await getGoogleDocsService().exportPDF(
           args?.documentId as string,
           args?.outputPath as string
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'drive_list_files': {
+        const result = await getGoogleDocsService().listDriveFiles(
+          args?.maxResults as number,
+          args?.mimeType as string
         );
         return {
           content: [

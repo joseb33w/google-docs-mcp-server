@@ -239,6 +239,40 @@ export class GoogleDocsService {
     };
   }
 
+  async listDriveFiles(maxResults = 50, mimeType?: string) {
+    await this.ensureAuthenticated();
+
+    let query = "trashed=false";
+    if (mimeType) {
+      query += ` and mimeType='${mimeType}'`;
+    }
+
+    const response = await this.drive.files.list({
+      q: query,
+      spaces: 'drive',
+      fields: 'files(id, name, mimeType, createdTime, modifiedTime, size, webViewLink)',
+      pageSize: maxResults,
+      orderBy: 'modifiedTime desc',
+    });
+
+    return {
+      totalFiles: response.data.files?.length || 0,
+      files: response.data.files?.map((file: any) => ({
+        id: file.id,
+        name: file.name,
+        mimeType: file.mimeType,
+        createdTime: file.createdTime,
+        modifiedTime: file.modifiedTime,
+        size: file.size,
+        webViewLink: file.webViewLink,
+        isGoogleDoc: file.mimeType === 'application/vnd.google-apps.document',
+        isGoogleSheet: file.mimeType === 'application/vnd.google-apps.spreadsheet',
+        isGoogleSlide: file.mimeType === 'application/vnd.google-apps.presentation',
+        isFolder: file.mimeType === 'application/vnd.google-apps.folder',
+      })),
+    };
+  }
+
   async deleteDocument(documentId: string) {
     await this.ensureAuthenticated();
 
