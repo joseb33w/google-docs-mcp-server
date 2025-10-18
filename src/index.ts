@@ -978,3 +978,4 @@ main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
+// Force redeploy - Sat Oct 18 01:09:23 CDT 2025
