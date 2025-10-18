@@ -32,3 +32,4 @@ This server is designed to be deployed on Railway for use with OpenAI's Agent Bu
 
 Use the deployed URL with `/mcp` endpoint:
 `https://your-app.railway.app/mcp`
+# Force redeploy Sat Oct 18 01:05:30 CDT 2025
